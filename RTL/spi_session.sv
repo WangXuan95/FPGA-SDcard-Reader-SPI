@@ -38,7 +38,7 @@ logic iscmdr=1'b0, isacmdr=1'b0, iscmdres=1'b0, isacmdres=1'b0,ismidc=1'b0, isrw
 assign byteend   = (cyccnt==0) && ({bitcnt,highlow}==4'h0) ;
 assign bytestart = (cyccnt==1) && ({bitcnt,highlow}==4'h0) ;
 
-always @ (posedge clk or negedge rst_n) begin
+always @ (posedge clk or negedge rst_n)
     if(~rst_n) begin
         cyccnt = 0;
         {bitcnt,highlow} = 3'h0;
@@ -63,9 +63,8 @@ always @ (posedge clk or negedge rst_n) begin
             cyccnt = 0;
         end
     end
-end
 
-always @ (posedge clk or negedge rst_n) begin
+always @ (posedge clk or negedge rst_n)
     if(~rst_n) begin
         start_last   = 1'b0;
         clkdivreg    = 0;
@@ -165,7 +164,6 @@ always @ (posedge clk or negedge rst_n) begin
             {iscmdr, isacmdr,iscmdres,isacmdres,ismidc,isrwc} = 0;
         end
     end
-end
 
 assign done = start && start_last && (lastc==0);
 
