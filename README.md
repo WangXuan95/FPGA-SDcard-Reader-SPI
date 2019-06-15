@@ -9,8 +9,8 @@ SDcard File Reader
 * **纯 RTL 实现** ：完全使用 SystemVerilog ,方便移植
 
 # 使用方法
-[读取文件示例.md](https://github.com/WangXuan95/sdcard-reader/blob/master/examples/ReadFile/ "读取文件示例.md")
-[读取扇区示例.md](https://github.com/WangXuan95/sdcard-reader/blob/master/examples/ReadSector/ "读取扇区示例.md")
+* [读取文件示例.md](https://github.com/WangXuan95/sdcard-reader/blob/master/examples/ReadFile/ "读取文件示例.md")
+* [读取扇区示例.md](https://github.com/WangXuan95/sdcard-reader/blob/master/examples/ReadSector/ "读取扇区示例.md")
 
 # 推荐硬件电路
 
