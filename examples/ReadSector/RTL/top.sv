@@ -1,6 +1,7 @@
 // a example top for using sd_spi_sector_reader.sv
 // function : find TARGET.TXT in the rootdir of SDcard and read out its content to UART(baud=115200)
-// the SDcard must be SDv2   (typically 128MB~ 2GB)
+// the SDcard must be SDv1.1 (typically  32MB~ 2GB)
+//                 or SDv2   (typically 128MB~ 2GB)
 //                 or SDHCv2 (typically   2GB~16GB)
 // the file-system must be FAT16 or FAT32. If not, reformat the SD card.
 // Store target.txt in the root directory, case-insensitive

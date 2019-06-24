@@ -1,6 +1,7 @@
 // a example top for using sd_file_reader.sv
 // function : find TARGET.TXT in the rootdir of SDcard and read out its content to UART(baud=115200)
-// the SDcard must be SDv2   (typically 128MB~ 2GB)
+// the SDcard must be SDv1.1 (typically  32MB~ 2GB)
+//                 or SDv2   (typically 128MB~ 2GB)
 //                 or SDHCv2 (typically   2GB~16GB)
 // the file-system must be FAT16 or FAT32. If not, reformat the SD card.
 // Store target.txt in the root directory, case-insensitive
@@ -23,7 +24,7 @@ wire [7:0] outbyte; // a byte of file content
 
 // type and status
 //logic [3:0] sdcardstate;
-logic [1:0] sdcardtype;     // 0=Unknown, 1=SDv1 , 2=SDv2 , 3=SDHCv3  (SDv1 Not yet supported)
+logic [1:0] sdcardtype;     // 0=Unknown, 1=SDv1.1 , 2=SDv2 , 3=SDHCv3
 logic [1:0] filesystemtype; // 0=Unknown, 1=FAT16, 2=FAT32
 logic [2:0] fatstate;       // 3'd6 = DONE
 logic file_found;           // 0=file not found, 1=file found

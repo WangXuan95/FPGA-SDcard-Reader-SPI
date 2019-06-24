@@ -26,7 +26,7 @@ module sd_spi_sector_reader #(
 localparam CMD8_VALID_RES  = 8'hAA;
 
 enum logic [1:0] {NONE, SDv1, SDv2, SDHCv2} cardtype = NONE;
-enum logic [3:0] {RESET, CMD0, CMD8, CMD1, CMD8FAILED, ACMD41, CMD58, CMD16, IDLE, READING} cardstate = RESET;
+enum logic [3:0] {RESET, CMD0, CMD8, DONEv1, CMD8FAILED, ACMD41, CMD58, CMD16, IDLE, READING} cardstate = RESET;
 
 reg  spistart=0;
 wire spidone;
@@ -55,15 +55,14 @@ always @ (posedge clk or negedge rst_n) begin
             case(cardstate)
             RESET : cardstate = CMD0;
             CMD0  : if(cmdrsp==8'h01) cardstate = CMD8;
-            CMD1  : if(cmdrsp==8'h00) cardstate = IDLE;
             CMD8  : if(cmdrsp==8'h01) begin  // SDv2.0
                         if(cmdres[0+:8]==CMD8_VALID_RES)  // CMD8 success
                             cardstate = ACMD41;
                         else
                             cardstate = CMD8FAILED;
                     end else begin   // SDv1
-                        cardstate = CMD1;   // TODO: SDv1
-                        cardtype  = SDv1;
+                        cardstate = DONEv1;   // TODO: SDv1
+                        cardtype  =   SDv1;
                     end
             ACMD41: if(cmdrsp==8'h01 && acmdrsp==8'h00) cardstate = CMD58;
             CMD58 : if(~cmdrsp[7]) begin  // SDv2.0
@@ -80,18 +79,17 @@ always @ (posedge clk or negedge rst_n) begin
         end else begin
             case(cardstate)
             RESET  : cardstate = CMD0;
-            CMD0   : begin spistart=1; cmd=48'h40_00000000_95 ; acmd=48'h00_00000000_00; waitcycle=255; precycle=20; startcycle=0; cmdrcycle=0; acmdcycle=0; midcycle= 0;recycle=0; end
-            CMD1   : begin spistart=1; cmd=48'h41_00000000_ff ; acmd=48'h00_00000000_00; waitcycle= 16; precycle= 0; startcycle=0; cmdrcycle=0; acmdcycle=0; midcycle= 0;recycle=0; end
-            CMD8   : begin spistart=1; cmd=48'h48_000001aa_87 ; acmd=48'h00_00000000_00; waitcycle= 16; precycle= 0; startcycle=1; cmdrcycle=4; acmdcycle=0; midcycle= 0;recycle=0; end
-            ACMD41 : begin spistart=1; cmd=48'h77_00000000_FF ; acmd=48'h69_40000000_FF; waitcycle= 16; precycle= 0; startcycle=1; cmdrcycle=0; acmdcycle=6; midcycle= 0;recycle=0; end
-            CMD58  : begin spistart=1; cmd=48'h7a_00000000_FF ; acmd=48'h00_00000000_00; waitcycle= 16; precycle= 0; startcycle=1; cmdrcycle=4; acmdcycle=0; midcycle= 0;recycle=0; end
-            CMD16  : begin spistart=1; cmd=48'h50_00000200_FF ; acmd=48'h00_00000000_00; waitcycle= 16; precycle= 0; startcycle=1; cmdrcycle=2; acmdcycle=0; midcycle= 0;recycle=0; end
+            CMD0   : begin spistart=1; cmd=48'h40_00000000_95 ; acmd=48'h00_00000000_00; waitcycle=255; precycle= 20; startcycle=0; cmdrcycle=0; acmdcycle=0; midcycle= 0;recycle=0; end
+            CMD8   : begin spistart=1; cmd=48'h48_000001aa_87 ; acmd=48'h00_00000000_00; waitcycle= 16; precycle=  0; startcycle=1; cmdrcycle=4; acmdcycle=0; midcycle= 0;recycle=0; end
+            ACMD41 : begin spistart=1; cmd=48'h77_00000000_FF ; acmd=48'h69_40000000_FF; waitcycle= 16; precycle=  0; startcycle=1; cmdrcycle=0; acmdcycle=6; midcycle= 0;recycle=0; end
+            CMD58  : begin spistart=1; cmd=48'h7a_00000000_FF ; acmd=48'h00_00000000_00; waitcycle= 16; precycle=  0; startcycle=1; cmdrcycle=4; acmdcycle=0; midcycle= 0;recycle=0; end
+            CMD16  : begin spistart=1; cmd=48'h50_00000200_FF ; acmd=48'h00_00000000_00; waitcycle= 16; precycle=  0; startcycle=1; cmdrcycle=2; acmdcycle=0; midcycle= 0;recycle=0; end
             IDLE   : if(start) begin
-                       target_sector = (cardtype==SDHCv2) ? sector_no : ( (cardtype==SDv2 || cardtype==SDv1) ? sector_no*512 : 0 );
-                       spistart=1; cmd={8'h51,target_sector,8'hFF}; acmd=48'h00_00000000_00; waitcycle= 6; precycle= 0; startcycle=0; cmdrcycle=4; acmdcycle=0; midcycle=99;recycle=2;
+                         target_sector = (cardtype==SDHCv2) ? sector_no : ( (cardtype==SDv2) ? sector_no*512 : 0 );
+                   spistart=1; cmd={8'h51,target_sector,8'hFF}; acmd=48'h00_00000000_00; waitcycle= 6; precycle=  0; startcycle=0; cmdrcycle=4; acmdcycle=0; midcycle=99;recycle=2;
                      end
             READING: begin
-                       spistart=1; cmd={8'h51,target_sector,8'hFF}; acmd=48'h00_00000000_00; waitcycle= 6; precycle= 0; startcycle=0; cmdrcycle=4; acmdcycle=0; midcycle=99;recycle=2;
+                   spistart=1; cmd={8'h51,target_sector,8'hFF}; acmd=48'h00_00000000_00; waitcycle= 6; precycle=  0; startcycle=0; cmdrcycle=4; acmdcycle=0; midcycle=99;recycle=2;
                      end
             endcase
         end

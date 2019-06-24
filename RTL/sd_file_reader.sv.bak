@@ -1,6 +1,6 @@
 // module  : sd_file_reader
 // function: Specify a filename that the module will read out its contents
-// Compatibility: CardType   : SDv1.1 , SDv2  and SDHCv2
+// Compatibility: CardType   : SDv2  and SDHCv2
 //                FileSystem : FAT16 and FAT32
 
 module sd_file_reader #(
@@ -45,6 +45,8 @@ logic [ 7:0] rdata;
 logic is_boot_sector, is_dbr;
 logic [31:0] dbr_sector_no;
 
+logic [ 1:0] fsystem;
+
 logic [15:0] rootdir_itemcount;   // 根目录项数（仅FAT16有效）
 logic [15:0] bytes_per_sector;    // 每扇区字节数
 logic [ 7:0] sector_per_cluster;  // 每簇扇区数
@@ -87,10 +89,12 @@ wire [31:0] fsize;
 
 reg search_fat = 1'b0;  // 如果=1 说明已经访问到了一个cluster的尽头，要去查找FAT表
 enum {RESET, SEARCH_MBR, SEARCH_DBR, LS_ROOT_FAT16, LS_ROOT_FAT32, READ_A_FILE, DONE} fat_state = RESET;
-enum logic [1:0] {UNASSIGNED, UNKNOWN, FAT16, FAT32} file_system=UNASSIGNED, fsystem;
+enum logic [1:0] {UNKNOWN, FAT16, FAT32} file_system = UNKNOWN;
 
 assign filesystemtype = file_system;
 assign fatstate = fat_state[2:0];
+
+
 
 // store and parse MBR or DBR fields
 logic [ 7:0] sector_content [512];
@@ -110,16 +114,18 @@ always @ (*) begin
     
     rootdir_itemcount =   {sector_content['h12],sector_content['h11]};
     
-    sectors_per_fat   = {16'h0, sector_content['h17], sector_content['h16]};
-    root_cluster      = 0;
-    if(sectors_per_fat>0) begin  // FAT16 case
-        fsystem           = FAT16;
+    if(sector_content[1]=='h3C) begin  // FAT16 case
+        fsystem           = 2'd1;
+        sectors_per_fat   = {16'h0, sector_content['h17], sector_content['h16]};
+        root_cluster      = 0;
     end else if(sector_content[1]=='h58) begin  // FAT32 case
-        fsystem           = FAT32;
+        fsystem           = 2'd2;
         sectors_per_fat   = {sector_content['h27],sector_content['h26],sector_content['h25],sector_content['h24]};
         root_cluster      = {sector_content['h2F],sector_content['h2E],sector_content['h2D],sector_content['h2C]};
     end else begin   // Unknown FileSystem
-        fsystem           = UNKNOWN;
+        fsystem           = 2'd0;
+        sectors_per_fat   = 0;
+        root_cluster      = 0;
     end
 end
 
@@ -142,8 +148,12 @@ always @ (posedge clk or negedge rst_n)
         if(read_done) begin
             case(fat_state)
             SEARCH_MBR :    if(is_boot_sector) begin
-                                fat_state = SEARCH_DBR;
-                                if(~is_dbr) read_sector_no = dbr_sector_no;
+                                if(is_dbr) begin
+                                    fat_state = DONE;
+                                end else begin
+                                    fat_state = SEARCH_DBR;
+                                    read_sector_no = dbr_sector_no;
+                                end
                             end else begin
                                 read_sector_no++;
                             end
@@ -151,7 +161,12 @@ always @ (posedge clk or negedge rst_n)
                                 if(bytes_per_sector!=16'd512) begin
                                     fat_state = DONE;
                                 end else begin
-                                    file_system = fsystem;
+                                    if(fsystem==2'd1)
+                                        file_system = FAT16;
+                                    else if(fsystem==2'd2)
+                                        file_system = FAT32;
+                                    else
+                                        file_system = UNKNOWN;
                                     if(file_system==FAT16) begin
                                         cluster_size        = sector_per_cluster;  // 保存每簇扇区数
                                         first_fat_sector_no = read_sector_no + resv_sectors; // 首个 FAT 表所在扇区
