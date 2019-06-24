@@ -2,10 +2,11 @@ FPGA SDcard File Reader
 ===========================
 可能是首个 **基于RTL** 的 SD 卡 **文件系统** 读取器
 
-|           |  SDv1.1 card       |  SDv2 card          | SDHCv2 card        |
-| :-----:   | :------------:     |   :------------:    | :------------:     |
-| **FAT16** | :heavy_check_mark: |  :heavy_check_mark: | NaN                |
-| **FAT32** | :heavy_check_mark: |  :heavy_check_mark: | :heavy_check_mark: |
+|           |  SDv1.1 card       |  SDv2 card          | SDHCv2 card        | SDXCv2 card    |
+| :-----:   | :------------:     |   :------------:    | :------------:     | :------------: |
+| **FAT16** | :heavy_check_mark: |  :heavy_check_mark: | NaN                | NaN            |
+| **FAT32** | :heavy_check_mark: |  :heavy_check_mark: | :heavy_check_mark: | NaN            |
+| **exFAT** | :x:                |  :x:                | :x:                | :x:            |
 
 # 特点
 * **硬件支持** ： **SDv1.1** 、 **SDv2** 和 **SDHCv2** (典型大小 32MB~32GB，覆盖了最常见的一类卡)。
