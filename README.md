@@ -2,6 +2,8 @@ FPGA SDcard File Reader
 ===========================
 可能是首个 **基于RTL** 的 SD 卡 **文件系统** 读取器
 
+> 注：该库是基于SD卡的 **SPI总线** 的，笔者也有 **[SD版本](https://github.com/WangXuan95/FPGA-SDcard/ "SD版本")** 。 与该 **SPI版本** 同样稳定且更 **高效** ，推荐尝试 **SD版本** 
+
 |           |  SDv1.1 card       |  SDv2 card          | SDHCv2 card        | SDXCv2 card    |
 | :-----:   | :------------:     |   :------------:    | :------------:     | :------------: |
 | **FAT16** | :heavy_check_mark: |  :heavy_check_mark: | NaN                | NaN            |
