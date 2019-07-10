@@ -1,3 +1,6 @@
+![test](https://img.shields.io/badge/test-passing-green.svg)
+![docs](https://img.shields.io/badge/docs-passing-green.svg)
+
 FPGA SDcard File Reader
 ===========================
 可能是首个 **基于RTL** 的 SD 卡 **文件系统** 读取器
