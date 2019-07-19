@@ -35,9 +35,9 @@ assign led = {sdcardtype,filesystemtype,file_found,fatstate};
 
 // For input and output definitions of this module, see sd_file_reader.sv
 sd_file_reader #(
-    .FILE_NAME      ( "TARGET.TXT"   ), // file to read, It must be uppercase, whether the filename is actually uppercase or lowercase
+    .FILE_NAME      ( "target.txt"   ), // file to read, ignore Upper and Lower Case
                                         // For example, if you want to read a file named HeLLo123.txt in the SD card,
-                                        // the parameter here must be set to HELLO123.TXT
+                                        // the parameter here can be hello123.TXT, HELLO123.txt or HEllo123.Txt
     
     .SPI_CLK_DIV    ( 50             )  // SD spi_clk freq = clk freq/(2*SPI_CLK_DIV)
                                         // modify SPI_CLK_DIV to change the SPI speed

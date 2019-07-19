@@ -4,9 +4,9 @@
 //                FileSystem : FAT16 and FAT32
 
 module sd_file_reader #(
-    parameter FILE_NAME = "EXAMPLE.TXT",  // file to read, It must be uppercase, whether the filename is actually uppercase or lowercase
+    parameter FILE_NAME = "example.txt",  // file to read, ignore Upper and Lower Case
                                           // For example, if you want to read a file named HeLLo123.txt in the SD card,
-                                          // the parameter here must be set to HELLO123.TXT
+                                          // the parameter here can be hello123.TXT, HELLO123.txt or HEllo123.Txt
                                           
     parameter SPI_CLK_DIV = 50            // SD spi_clk freq = clk freq/(2*SPI_CLK_DIV)
                                           // modify SPI_CLK_DIV to change the SPI speed
@@ -29,8 +29,17 @@ module sd_file_reader #(
     output logic [7:0] outbyte            // a byte of file content
 );
 
+function automatic logic [7:0] toUpperCase(input [7:0] in);
+    return (in>="a" && in<="z") ? in&8'b11011111 : in;
+endfunction
+
 localparam TARGET_FNAME_LEN = ($bits(FILE_NAME)/8);
-wire [$bits(FILE_NAME)-1:0] TARGET_FNAME = FILE_NAME;
+wire  [$bits(FILE_NAME)-1:0] TARGET_FNAME = FILE_NAME;
+logic [$bits(FILE_NAME)-1:0] TARGET_FNAME_UPPER;
+always @ (*) begin
+    for(int ii=0; ii<TARGET_FNAME_LEN; ii++)
+        TARGET_FNAME_UPPER[ii*8+:8] = toUpperCase( TARGET_FNAME[ii*8+:8] );
+end
 
 initial file_found = 1'b0;
 
@@ -320,7 +329,7 @@ always @ (posedge clk or negedge rst_n)
         if(fready && fnamelen==TARGET_FNAME_LEN) begin
             int i;
             for(i=0;i<TARGET_FNAME_LEN;i++) begin
-                if(fname[TARGET_FNAME_LEN-1-i]!=TARGET_FNAME[i*8+:8]) begin
+                if(fname[TARGET_FNAME_LEN-1-i]!=TARGET_FNAME_UPPER[i*8+:8]) begin
                     break;
                 end
             end

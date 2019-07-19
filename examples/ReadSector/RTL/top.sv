@@ -24,7 +24,7 @@ wire [7:0] outbyte; // a byte of file content
 
 // type and status
 logic [3:0] sdcardstate;
-logic [1:0] sdcardtype;     // 0=Unknown, 1=SDv1 , 2=SDv2 , 3=SDHCv3  (SDv1 Not yet supported)
+logic [1:0] sdcardtype;     // 0=Unknown, 1=SDv1 , 2=SDv2 , 3=SDHCv3
 
 // display status on 8bit LED
 assign led = {sdcardtype,2'b00,sdcardstate};
