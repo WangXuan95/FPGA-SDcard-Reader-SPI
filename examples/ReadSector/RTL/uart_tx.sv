@@ -26,7 +26,7 @@ module uart_tx #(
     output logic o_uart_tx
 );
 
-function automatic [7:0] hex2ascii(input [3:0] hex);
+function automatic logic [7:0] hex2ascii(input [3:0] hex);
     return (hex<4'hA) ? (hex+"0") : (hex+("A"-8'hA)) ;
 endfunction
 
