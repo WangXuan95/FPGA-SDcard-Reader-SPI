@@ -123,7 +123,7 @@ always @ (*) begin
     root_cluster      = 0;
     if(sectors_per_fat>0) begin  // FAT16 case
         fsystem           = FAT16;
-    end else if(sector_content[1]=='h58) begin  // FAT32 case
+    end else if(sector_content['h56]==8'h32) begin  // FAT32 case
         fsystem           = FAT32;
         sectors_per_fat   = {sector_content['h27],sector_content['h26],sector_content['h25],sector_content['h24]};
         root_cluster      = {sector_content['h2F],sector_content['h2E],sector_content['h2D],sector_content['h2C]};
@@ -204,7 +204,7 @@ always @ (posedge clk or negedge rst_n)
                                     cluster_sector_offset = 8'h0;
                                     read_sector_no = first_data_sector_no + cluster_size * curr_cluster + cluster_sector_offset;
                                     fat_state = READ_A_FILE;
-                                end else if(cluster_sector_offset<cluster_size) begin
+                                end else if(cluster_sector_offset<(cluster_size-1)) begin
                                     cluster_sector_offset ++;
                                     read_sector_no = first_data_sector_no + cluster_size * curr_cluster + cluster_sector_offset;
                                 end else begin   // read FAT to get next cluster
@@ -223,7 +223,7 @@ always @ (posedge clk or negedge rst_n)
                                 end
                             end
             READ_A_FILE  :  if(~search_fat) begin
-                                if(cluster_sector_offset<cluster_size) begin
+                                if(cluster_sector_offset<(cluster_size-1)) begin
                                     cluster_sector_offset ++;
                                     read_sector_no = first_data_sector_no + cluster_size * curr_cluster + cluster_sector_offset;
                                 end else begin   // read FAT to get next cluster

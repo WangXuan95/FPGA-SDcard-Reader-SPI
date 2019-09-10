@@ -35,7 +35,7 @@ assign led = {sdcardtype,filesystemtype,file_found,fatstate};
 
 // For input and output definitions of this module, see sd_file_reader.sv
 sd_file_reader #(
-    .FILE_NAME      ( "target.txt"   ), // file to read, ignore Upper and Lower Case
+    .FILE_NAME      ( "example.txt"  ), // file to read, ignore Upper and Lower Case
                                         // For example, if you want to read a file named HeLLo123.txt in the SD card,
                                         // the parameter here can be hello123.TXT, HELLO123.txt or HEllo123.Txt
     

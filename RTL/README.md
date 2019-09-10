@@ -1,4 +1,4 @@
-SDcard File Reader （核心RTL代码)
+SDcard File Reader (SPI) （核心RTL代码)
 ===========================
 
 * **sd_file_reader.sv** 提供一个用来读取文件的接口
