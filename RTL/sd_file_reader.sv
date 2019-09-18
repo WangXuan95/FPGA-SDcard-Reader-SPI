@@ -54,18 +54,18 @@ logic [ 7:0] rdata;
 logic is_boot_sector, is_dbr;
 logic [31:0] dbr_sector_no;
 
-logic [15:0] rootdir_itemcount;   // 根目录项数（仅FAT16有效）
-logic [15:0] bytes_per_sector;    // 每扇区字节数
-logic [ 7:0] sector_per_cluster;  // 每簇扇区数
-logic [15:0] resv_sectors;        // 保留扇区数
-logic [ 7:0] number_of_fat;       // FAT表的数量
-logic [31:0] sectors_per_fat;     // FAT表所占扇区数
-logic [31:0] root_cluster;        // 根目录所在簇数
+logic [15:0] rootdir_itemcount;   // FAT16 only
+logic [15:0] bytes_per_sector;
+logic [ 7:0] sector_per_cluster;
+logic [15:0] resv_sectors;
+logic [ 7:0] number_of_fat;
+logic [31:0] sectors_per_fat;
+logic [31:0] root_cluster;
 
-logic [31:0] rootdir_sector;      // 根目录所在扇区数（仅FAT16有效）
-logic [15:0] rootdir_sectorcount; // 根目录扇区数（仅FAT16有效）
+logic [31:0] rootdir_sector;      // FAT16 only
+logic [15:0] rootdir_sectorcount; // FAT16 only
 
-logic [31:0] curr_cluster = 0;    // 当前正在读的簇号
+logic [31:0] curr_cluster = 0;    // current reading cluster number
 
 logic [ 6:0] curr_cluster_fat_offset;
 logic [24:0] curr_cluster_fat_no;
@@ -75,26 +75,25 @@ logic [ 7:0] curr_cluster_fat_offset_fat16;
 logic [23:0] curr_cluster_fat_no_fat16;
 assign {curr_cluster_fat_no_fat16,curr_cluster_fat_offset_fat16} = curr_cluster;
 
-logic [15:0] target_cluster_fat16 = 16'h0; // 从FAT表中找到的下一个簇的簇号
-logic [31:0] target_cluster=0;             // 从FAT表中找到的下一个簇的簇号
-logic [ 7:0] cluster_sector_offset=8'h0;   // 当前正在读的簇内的扇区号
+logic [15:0] target_cluster_fat16 = 16'h0;
+logic [31:0] target_cluster=0;
+logic [ 7:0] cluster_sector_offset=8'h0;
 
 logic [31:0] file_cluster=0;
 logic [31:0] file_size = 0;
 
-// 这些信号在读取 DBR 后被一直锁存备用
-logic [ 7:0] cluster_size;            // 每簇扇区数
-logic [31:0] first_fat_sector_no = 0; // 首个 FAT 表所在扇区
-logic [31:0] first_data_sector_no= 0; // 数据区首个扇区的扇区号
+logic [ 7:0] cluster_size;
+logic [31:0] first_fat_sector_no = 0;
+logic [31:0] first_data_sector_no= 0;
 
-// 文件解析结果
-wire fready;            // 有效信号，为高时解析出一个文件
+// file parse result
+wire fready;            // a file is find when fready = 1
 wire [ 7:0] fnamelen;
 wire [ 7:0] fname [52];
 wire [15:0] fcluster;
 wire [31:0] fsize;
 
-reg search_fat = 1'b0;  // 如果=1 说明已经访问到了一个cluster的尽头，要去查找FAT表
+reg search_fat = 1'b0;
 enum {RESET, SEARCH_MBR, SEARCH_DBR, LS_ROOT_FAT16, LS_ROOT_FAT32, READ_A_FILE, DONE} fat_state = RESET;
 enum logic [1:0] {UNASSIGNED, UNKNOWN, FAT16, FAT32} file_system=UNASSIGNED, fsystem;
 
@@ -162,21 +161,21 @@ always @ (posedge clk or negedge rst_n)
                                 end else begin
                                     file_system = fsystem;
                                     if(file_system==FAT16) begin
-                                        cluster_size        = sector_per_cluster;  // 保存每簇扇区数
-                                        first_fat_sector_no = read_sector_no + resv_sectors; // 首个 FAT 表所在扇区
+                                        cluster_size        = sector_per_cluster;
+                                        first_fat_sector_no = read_sector_no + resv_sectors;
                                         
-                                        rootdir_sectorcount = rootdir_itemcount*32/512;  // 根目录扇区数 = 根目录项数*每项字节数/每扇区字节数
-                                        rootdir_sector      = first_fat_sector_no + sectors_per_fat * number_of_fat; // 算出根目录所在的扇区号
-                                        first_data_sector_no= rootdir_sector + rootdir_sectorcount - cluster_size*2; // 算出存数据区首个扇区的扇区号
+                                        rootdir_sectorcount = rootdir_itemcount/(16'd512/16'd32);
+                                        rootdir_sector      = first_fat_sector_no + sectors_per_fat * number_of_fat;
+                                        first_data_sector_no= rootdir_sector + rootdir_sectorcount - cluster_size*2;
                                         
                                         cluster_sector_offset = 8'h0;
-                                        read_sector_no      = rootdir_sector + cluster_sector_offset;  // 下一步要读根目录，算出根目录的扇区号
+                                        read_sector_no      = rootdir_sector + cluster_sector_offset;
                                         fat_state = LS_ROOT_FAT16;
                                     end else if(file_system==FAT32) begin
-                                        cluster_size        = sector_per_cluster;  // 保存每簇扇区数
-                                        first_fat_sector_no = read_sector_no + resv_sectors; // 首个 FAT 表所在扇区
+                                        cluster_size        = sector_per_cluster;
+                                        first_fat_sector_no = read_sector_no + resv_sectors;
                                         
-                                        first_data_sector_no= first_fat_sector_no + sectors_per_fat * number_of_fat - cluster_size * 2; // 保存数据区首个扇区的扇区号
+                                        first_data_sector_no= first_fat_sector_no + sectors_per_fat * number_of_fat - cluster_size * 2;
                                         
                                         curr_cluster        = root_cluster;
                                         cluster_sector_offset = 8'h0;
@@ -196,7 +195,7 @@ always @ (posedge clk or negedge rst_n)
                                     cluster_sector_offset ++;
                                     read_sector_no = rootdir_sector + cluster_sector_offset;
                                 end else begin
-                                    fat_state = DONE;   // 搜索到了根目录的尽头都没找到目标文件，结束
+                                    fat_state = DONE;
                                 end
             LS_ROOT_FAT32 : if(~search_fat) begin
                                 if(file_found) begin
@@ -216,7 +215,7 @@ always @ (posedge clk or negedge rst_n)
                                 search_fat = 1'b0;
                                 cluster_sector_offset = 8'h0;
                                 if(target_cluster=='h0FFF_FFFF || target_cluster=='h0FFF_FFF8 || target_cluster=='hFFFF_FFFF || target_cluster<2) begin
-                                    fat_state = DONE;   // 搜索到了根目录的尽头都没找到目标文件，结束
+                                    fat_state = DONE;
                                 end else begin
                                     curr_cluster = target_cluster;
                                     read_sector_no = first_data_sector_no + cluster_size * curr_cluster + cluster_sector_offset;
@@ -236,14 +235,14 @@ always @ (posedge clk or negedge rst_n)
                                 cluster_sector_offset = 8'h0;
                                 if(file_system==FAT16) begin
                                     if(target_cluster_fat16>=16'hFFF0 || target_cluster_fat16<16'h2) begin
-                                        fat_state = DONE;   // 搜索到了文件的尽头，结束
+                                        fat_state = DONE;
                                     end else begin
                                         curr_cluster = {16'h0,target_cluster_fat16};
                                         read_sector_no = first_data_sector_no + cluster_size * curr_cluster + cluster_sector_offset;
                                     end
                                 end else begin
                                     if(target_cluster=='h0FFF_FFFF || target_cluster=='h0FFF_FFF8 || target_cluster=='hFFFF_FFFF || target_cluster<2) begin
-                                        fat_state = DONE;   // 搜索到了文件的尽头，结束
+                                        fat_state = DONE;
                                     end else begin
                                         curr_cluster = target_cluster;
                                         read_sector_no = first_data_sector_no + cluster_size * curr_cluster + cluster_sector_offset;
@@ -265,7 +264,7 @@ always @ (posedge clk or negedge rst_n)
         end
     end
     
-// 当处于查找FAT表的情况下，捕捉当前簇对应的FAT表中的下一个簇项
+
 always @ (posedge clk or negedge rst_n) begin
     if(~rst_n) begin
         target_cluster = 0;

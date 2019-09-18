@@ -3,7 +3,7 @@
 
 FPGA SDcard File Reader (SPI)
 ===========================
-**基于 FPGA 的 SD卡文件读取器**
+**基于 FPGA 的 SD卡文件读取器 (SPI模式)**
 
 * **基本功能** ：FPGA作为 **SD-host** ， 指定文件名 **读取文件内容** ；或指定扇区号 **读取扇区内容**。
 * **兼容性强** : 自动适配 **SD卡版本** ，自动适配 **FAT16/FAT32文件系统**。
@@ -19,22 +19,24 @@ FPGA SDcard File Reader (SPI)
 > \* 注： SDHCv2 card 一般不使用 FAT16 文件系统
 
 
-# 示例
+# Xilinx FPGA 示例
 
-* [读取文件示例](https://github.com/WangXuan95/FPGA-SDcard-Reader-SPI/blob/master/examples/ReadFile/ "读取文件示例")
+以下示例基于 [Nexys4-DDR 开发板](http://www.digilent.com.cn/products/product-nexys-4-ddr-artix-7-fpga-trainer-board.html) (Xilinx Artix-7)。
 
-* [读取扇区示例](https://github.com/WangXuan95/FPGA-SDcard-Reader-SPI/blob/master/examples/ReadSector/ "读取扇区示例")
+* [读取文件示例](https://github.com/WangXuan95/FPGA-SDcard-Reader-SPI/blob/master/Nexys4-ReadFile/ "读取文件示例") : 读取SD卡中的文件
+* [读取扇区示例](https://github.com/WangXuan95/FPGA-SDcard-Reader-SPI/blob/master/Nexys4-ReadSector/ "读取扇区示例") : 读取SD卡中的扇区
 
 
-# 推荐硬件电路
+# Altera FPGA 示例
 
-如图，使用 SD 卡的 **SPI模式** 。其中：
-* **spi_cs_n** 和 **spi_miso** 的上拉电阻是必要的。
-* **spi_mosi** 的上拉电阻是可选的。
-* **spi_clk** 不能加上拉电阻
-* **DAT1** 和 **DAT2** 是在 **SPI模式** 下忽略的两个引脚。
+以下示例基于 [**DE0-CV 开发板**](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=163&No=921) (Altera Cyclone V)。
 
-![推荐硬件电路](https://github.com/WangXuan95/FPGA-SDcard-Reader-SPI/blob/master/doc/sch.png)
+* [读取文件示例](https://github.com/WangXuan95/FPGA-SDcard-Reader-SPI/blob/master/DE0-CV-ReadFile/ "读取文件示例") : 读取SD卡中的文件
+* [读取扇区示例](https://github.com/WangXuan95/FPGA-SDcard-Reader-SPI/blob/master/DE0-CV-ReadSector/ "读取扇区示例") : 读取SD卡中的扇区
+
+| ![读取文件后显示在VGA](https://github.com/WangXuan95/FPGA-SDcard-Reader-SPI/blob/master/images/screen.jpg) |
+| :------: |
+| 图：FPGA 读取文件后显示在 VGA 上 |
 
 
 # 相关链接

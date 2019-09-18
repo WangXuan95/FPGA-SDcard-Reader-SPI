@@ -6,21 +6,21 @@ module sd_spi_sector_reader #(
                                 // for example, when clk=50MHz, SPI_CLK_DIV=50,then spi_clk=50MHz/(2*50)=500kHz
                                 // 500kHz is a typical SPI speed for SDcard
 )(
-    input  logic clk, rst_n,
+    input  logic         clk, rst_n,
     // user read sector command interface
-    input  logic start, 
-    input  logic [31:0] sector_no,
-    output logic done,
+    input  logic         start, 
+    input  logic [31:0]  sector_no,
+    output logic         done,
     // data readout
-    output logic rvalid,
-    output logic [ 8:0] raddr,  // raddr from 0 to 511, because the sector size is 512
-    output logic [ 7:0] rdata,
+    output logic         rvalid,
+    output logic [ 8:0]  raddr,  // raddr from 0 to 511, because the sector size is 512
+    output logic [ 7:0]  rdata,
     // card status (for debug)
-    output logic [ 1:0] sdcardtype,
-    output logic [ 3:0] sdcardstate,
-    // spi interface
-    output logic spi_csn, spi_clk, spi_mosi,
-    input  logic spi_miso
+    output logic [ 1:0]  sdcardtype,
+    output logic [ 3:0]  sdcardstate,
+    // SDcard spi interface
+    output logic         spi_csn, spi_clk, spi_mosi,
+    input  logic         spi_miso
 );
 
 localparam CMD8_VALID_RES  = 8'hAA;
