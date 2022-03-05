@@ -30,10 +30,10 @@
 | 第3位 | **1**代表**不支持类别** ， **2**代表**FAT16** ， **3**代表**FAT32** |
 | 第4位 | **1**代表已找到目标文件 ， **0**代表未找到目标文件 |
 
-| ![readfile示例照片](https://github.com/WangXuan95/FPGA-SDcard-Reader-SPI/blob/master/images/readfile_test.jpg) |
+| ![readfile示例照片](../images/readfile_test.jpg) |
 | :------: |
 | 图：在图中，数码管显示卡类型为 **SDHCv2卡** ，文件系统为 **FAT32** |
 
-| ![读取文件后显示在VGA](https://github.com/WangXuan95/FPGA-SDcard-Reader-SPI/blob/master/images/screen.jpg) |
+| ![读取文件后显示在VGA](../images/screen.jpg) |
 | :------: |
 | 图：FPGA 读取文件后显示在 VGA 上 |
