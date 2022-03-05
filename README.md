@@ -23,18 +23,18 @@ FPGA SDcard File Reader (SPI)
 
 以下示例基于 [Nexys4-DDR 开发板](http://www.digilent.com.cn/products/product-nexys-4-ddr-artix-7-fpga-trainer-board.html) (Xilinx Artix-7)。
 
-* [读取文件示例](https://github.com/WangXuan95/FPGA-SDcard-Reader-SPI/blob/master/Nexys4-ReadFile/ "读取文件示例") : 读取SD卡中的文件
-* [读取扇区示例](https://github.com/WangXuan95/FPGA-SDcard-Reader-SPI/blob/master/Nexys4-ReadSector/ "读取扇区示例") : 读取SD卡中的扇区
+* [读取文件示例](./Nexys4-ReadFile/ "读取文件示例") : 读取SD卡中的文件
+* [读取扇区示例](./Nexys4-ReadSector/ "读取扇区示例") : 读取SD卡中的扇区
 
 
 # Altera FPGA 示例
 
 以下示例基于 [**DE0-CV 开发板**](https://www.terasic.com.tw/cgi-bin/page/archive.pl?Language=English&CategoryNo=163&No=921) (Altera Cyclone V)。
 
-* [读取文件示例](https://github.com/WangXuan95/FPGA-SDcard-Reader-SPI/blob/master/DE0-CV-ReadFile/ "读取文件示例") : 读取SD卡中的文件
-* [读取扇区示例](https://github.com/WangXuan95/FPGA-SDcard-Reader-SPI/blob/master/DE0-CV-ReadSector/ "读取扇区示例") : 读取SD卡中的扇区
+* [读取文件示例](./DE0-CV-ReadFile/ "读取文件示例") : 读取SD卡中的文件
+* [读取扇区示例](./DE0-CV-ReadSector/ "读取扇区示例") : 读取SD卡中的扇区
 
-| ![读取文件后显示在VGA](https://github.com/WangXuan95/FPGA-SDcard-Reader-SPI/blob/master/images/screen.jpg) |
+| ![读取文件后显示在VGA](./images/screen.jpg) |
 | :------: |
 | 图：FPGA 读取文件后显示在 VGA 上 |
 
