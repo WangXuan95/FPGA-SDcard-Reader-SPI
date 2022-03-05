@@ -23,6 +23,6 @@
 | 第1位   | **0**代表**未知类别** ，**1**代表**SDv1卡** ，**2**代表**SDv2卡** ， **3**代表**SDHCv2卡** |
 | 第3~6位 | SD卡 **第0扇区(MBR扇区)** 的最后两字节。若为**55AA**，代表MBR扇区有效。
 
-| ![readsector示例照片](https://github.com/WangXuan95/FPGA-SDcard-Reader-SPI/blob/master/images/readsector_test.jpg) |
+| ![readsector示例照片](../images/readsector_test.jpg) |
 | :------: |
 | 图：在图中，数码管显示初始化完成，卡类型为 **SDHCv2卡** ，第0扇区最后两字节为**55AA** |
