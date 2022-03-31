@@ -1,12 +1,24 @@
 
-// this module can automatically initialize the sdcard and handle the read sector command from user
+//--------------------------------------------------------------------------------------------------------
+// Module  : sd_spi_sector_reader
+// Type    : synthesizable, IP's sub module
+// Standard: SystemVerilog 2005 (IEEE1800-2005)
+//--------------------------------------------------------------------------------------------------------
+
 module sd_spi_sector_reader #(
-    parameter SPI_CLK_DIV = 50  // SD spi_clk freq = clk freq/(2*SPI_CLK_DIV)
+    parameter SPI_CLK_DIV = 50  // SD spi_sck freq = clk freq/(2*SPI_CLK_DIV)
                                 // modify SPI_CLK_DIV to change the SPI speed
-                                // for example, when clk=50MHz, SPI_CLK_DIV=50,then spi_clk=50MHz/(2*50)=500kHz
+                                // for example, when clk=50MHz, SPI_CLK_DIV=50,then spi_sck=50MHz/(2*50)=500kHz
                                 // 500kHz is a typical SPI speed for SDcard
 )(
-    input  logic         clk, rst_n,
+    input  logic         rstn,
+    input  logic         clk,
+    // SDcard spi interface
+    output logic         spi_ssn, spi_sck, spi_mosi,
+    input  logic         spi_miso,
+    // card status (for debug)
+    output logic [ 1:0]  card_type,
+    output logic [ 3:0]  card_stat,
     // user read sector command interface
     input  logic         start, 
     input  logic [31:0]  sector_no,
@@ -14,13 +26,7 @@ module sd_spi_sector_reader #(
     // data readout
     output logic         rvalid,
     output logic [ 8:0]  raddr,  // raddr from 0 to 511, because the sector size is 512
-    output logic [ 7:0]  rdata,
-    // card status (for debug)
-    output logic [ 1:0]  sdcardtype,
-    output logic [ 3:0]  sdcardstate,
-    // SDcard spi interface
-    output logic         spi_csn, spi_clk, spi_mosi,
-    input  logic         spi_miso
+    output logic [ 7:0]  rdata
 );
 
 localparam CMD8_VALID_RES  = 8'hAA;
@@ -38,11 +44,11 @@ reg  [31:0] target_sector = 0;
 
 initial done = 1'b0;
 initial begin rvalid = 1'b0; raddr  = 9'h0; rdata  = 8'h0; end
-assign sdcardtype  = cardtype;
-assign sdcardstate = cardstate;
+assign card_type  = cardtype;
+assign card_stat = cardstate;
 
-always @ (posedge clk or negedge rst_n) begin
-    if(~rst_n) begin
+always @ (posedge clk or negedge rstn) begin
+    if(~rstn) begin
         done = 1'b0;
         spistart=0; cmd=48'h00_00000000_00; acmd=48'h00_00000000_00; waitcycle= 64; precycle=  0; startcycle=0; cmdrcycle=0; acmdcycle=0; midcycle= 0;recycle=0;
         cardtype  =  NONE;
@@ -102,8 +108,8 @@ logic rvalid_session;
 logic [15:0] rindex_session;
 logic [ 7:0] rdata_session;
 
-always @ (posedge clk or negedge rst_n) begin
-    if(~rst_n) begin
+always @ (posedge clk or negedge rstn) begin
+    if(~rstn) begin
         rvalid = 1'b0;
         raddr  = 9'h0;
         rdata  = 8'h0;
@@ -120,40 +126,41 @@ always @ (posedge clk or negedge rst_n) begin
     end
 end
 
-spi_session spi_session_for_sd_reader (
-    .clk          ( clk         ),
-    .rst_n        ( rst_n       ),
+spi_session spi_session_i (
+    .rstn         ( rstn            ),
+    .clk          ( clk             ),
+    // SPI interface
+    .spi_ssn      ( spi_ssn         ),
+    .spi_sck      ( spi_sck         ),
+    .spi_mosi     ( spi_mosi        ),
+    .spi_miso     ( spi_miso        ),
     // control interface
-    .start        ( spistart    ),
-    .done         ( spidone     ),
-    .clkdiv       ( SPI_CLK_DIV ),
-    .cmd          ( cmd         ),
-    .acmd         ( acmd        ),
+    .start        ( spistart        ),
+    .done         ( spidone         ),
+    .clkdiv       ( SPI_CLK_DIV     ),
+    .cmd          ( cmd             ),
+    .acmd         ( acmd            ),
     // control interface (cycle time control parameters)
-    .waitcycle    ( waitcycle   ),
-    .precycle     ( precycle    ),
-    .startcycle   ( startcycle  ),
-    .cmdcycle     ( 6           ),
-    .cmdrcycle    ( cmdrcycle   ),
-    .acmdcycle    ( acmdcycle   ),
-    .acmdrcycle   ( 0           ),
-    .midcycle     ( midcycle    ),
-    .stopcycle    ( 255         ),
-    .recycle      ( recycle     ),
+    .waitcycle    ( waitcycle       ),
+    .precycle     ( precycle        ),
+    .startcycle   ( startcycle      ),
+    .cmdcycle     ( 6               ),
+    .cmdrcycle    ( cmdrcycle       ),
+    .acmdcycle    ( acmdcycle       ),
+    .acmdrcycle   ( 0               ),
+    .midcycle     ( midcycle        ),
+    .stopcycle    ( 255             ),
+    .recycle      ( recycle         ),
     // cmd result interface
-    .cmdrsp       ( cmdrsp      ), 
-    .acmdrsp      ( acmdrsp     ),
-    .rwrsp        ( rwrsp       ),
-    .cmdres       ( cmdres      ),
+    .cmdrsp       ( cmdrsp          ), 
+    .acmdrsp      ( acmdrsp         ),
+    .rwrsp        ( rwrsp           ),
+    .cmdres       ( cmdres          ),
+    .acmdres      (                 ),
     // data readout
     .rvalid       ( rvalid_session  ),
     .rindex       ( rindex_session  ),
-    .rdata        ( rdata_session   ),
-
-    .csn          ( spi_csn     ),
-    .sck          ( spi_clk     ),
-    .mosi         ( spi_mosi    ),
-    .miso         ( spi_miso    )
+    .rdata        ( rdata_session   )
 );
 
 endmodule

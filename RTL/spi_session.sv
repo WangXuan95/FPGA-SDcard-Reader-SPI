@@ -1,27 +1,33 @@
 
-module spi_session(
-    input  logic clk, rst_n,
+//--------------------------------------------------------------------------------------------------------
+// Module  : spi_session
+// Type    : synthesizable, IP's sub module
+// Standard: SystemVerilog 2005 (IEEE1800-2005)
+//--------------------------------------------------------------------------------------------------------
+
+module spi_session (
+    input  logic        rstn,
+    input  logic        clk,
+    // spi interface
+    output logic        spi_ssn, spi_sck, spi_mosi,
+    input  logic        spi_miso,
     // user command interface
-    input  logic start, 
-    output logic done,
-    input  logic [31:0] clkdiv, // next command spi sck = clk / (2*(clkdiv+1)), for example clk=50MHz, clkdiv=124, sck=50MHz/(2*125) = 200kHz
+    input  logic        start, 
+    output logic        done,
+    input  logic [31:0] clkdiv, // next command spi_sck = clk / (2*(clkdiv+1)), for example clk=50MHz, clkdiv=124, spi_sck=50MHz/(2*125) = 200kHz
     input  logic [47:0] cmd, acmd,
     input  logic [ 7:0] waitcycle, precycle, startcycle, cmdcycle, cmdrcycle, acmdcycle, acmdrcycle, midcycle, stopcycle, recycle, // dummy clock byte cycles
-
     output logic [ 7:0] cmdrsp, acmdrsp, rwrsp,
     output logic [47:0] cmdres, acmdres,
-    
-    output logic rvalid,
+    // data readout
+    output logic        rvalid,
     output logic [15:0] rindex,
-    output logic [ 7:0] rdata,
-    // spi interface
-    output logic csn, sck, mosi,
-    input  logic miso
+    output logic [ 7:0] rdata
 );
 
 initial {cmdrsp, acmdrsp, rwrsp} = 0;
 initial {cmdres, acmdres} = 0;
-initial {csn, sck, mosi} = 3'b111;
+initial {spi_ssn, spi_sck, spi_mosi} = 3'b111;
 
 logic start_last=1'b0;
 logic [31:0] clkdivreg=0, cyccnt=0;
@@ -38,34 +44,34 @@ logic iscmdr=1'b0, isacmdr=1'b0, iscmdres=1'b0, isacmdres=1'b0,ismidc=1'b0, isrw
 assign byteend   = (cyccnt==0) && ({bitcnt,highlow}==4'h0) ;
 assign bytestart = (cyccnt==1) && ({bitcnt,highlow}==4'h0) ;
 
-always @ (posedge clk or negedge rst_n)
-    if(~rst_n) begin
+always @ (posedge clk or negedge rstn)
+    if(~rstn) begin
         cyccnt = 0;
         {bitcnt,highlow} = 3'h0;
-        {csn, sck, mosi} = 3'b111;
+        {spi_ssn, spi_sck, spi_mosi} = 3'b111;
         rbyte = 8'h0;
     end else begin
         if(~start) begin
             cyccnt = 0;
             {bitcnt,highlow} = 3'h0;
-            {csn, sck, mosi} = 3'b111;
+            {spi_ssn, spi_sck, spi_mosi} = 3'b111;
             rbyte = 8'h0;
         end else if(cyccnt<clkdivreg) begin
             cyccnt++;
         end else begin
-            csn  = ~chipselect;
-            sck = scken ? highlow : 1'b1;
-            if(highlow) // posedge of sck, capture miso
-                rbyte[7-bitcnt]= miso;
-            else        // negedge of sck, set mosi
-                mosi = wbyte[7-bitcnt];
+            spi_ssn  = ~chipselect;
+            spi_sck = scken ? highlow : 1'b1;
+            if(highlow) // posedge of spi_sck, capture spi_miso
+                rbyte[7-bitcnt]= spi_miso;
+            else        // negedge of spi_sck, set spi_mosi
+                spi_mosi = wbyte[7-bitcnt];
             {bitcnt,highlow}++;
             cyccnt = 0;
         end
     end
 
-always @ (posedge clk or negedge rst_n)
-    if(~rst_n) begin
+always @ (posedge clk or negedge rstn)
+    if(~rstn) begin
         start_last   = 1'b0;
         clkdivreg    = 0;
         {cmdr,acmdr} = 0;
