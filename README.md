@@ -81,7 +81,7 @@ where:
 Run FPGA demo
 ===========================
 
-The [example-vivado-readfile](./example-vivado-readfile) folder contains a demo vivado project, the demo runs on [Nexys4 development board](http://www.digilent.com.cn/products/product-nexys-4-ddr-artix-7-fpga-trainer-board.html) (because the Nexys4 development board has a microSDcard slot), it will search the file "example.txt" from the root directory of the SDcard and read out its entire content, and then send it to the PC via **UART** .
+example-vivado-readfile.zip contains a demo vivado project, the demo runs on [Nexys4 development board](http://www.digilent.com.cn/products/product-nexys-4-ddr-artix-7-fpga-trainer-board.html) (because the Nexys4 development board has a microSDcard slot), it will search the file "example.txt" from the root directory of the SDcard and read out its entire content, and then send it to the PC via **UART** .
 
 Run the demo as follows:
 
@@ -191,7 +191,7 @@ module sd_spi_file_reader #(
 运行示例工程
 ===========================
 
-example-vivado-readfile 文件夹中包含一个 vivado 工程，该示例在 [Nexys4开发板](http://www.digilent.com.cn/products/product-nexys-4-ddr-artix-7-fpga-trainer-board.html) 上运行（因为 Nexys4 开发板有 microSD 卡槽，比较方便），它会从SD卡根目录中找到文件 example.txt 并读取其全部内容，然后用 UART 发送出给PC机。
+example-vivado-readfile.zip 中包含一个 vivado 工程，该示例在 [Nexys4开发板](http://www.digilent.com.cn/products/product-nexys-4-ddr-artix-7-fpga-trainer-board.html) 上运行（因为 Nexys4 开发板有 microSD 卡槽，比较方便），它会从SD卡根目录中找到文件 example.txt 并读取其全部内容，然后用 UART 发送出给PC机。
 
 按以下步骤运行该示例：
 
