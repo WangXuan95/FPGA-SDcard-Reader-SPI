@@ -2,49 +2,56 @@
 //--------------------------------------------------------------------------------------------------------
 // Module  : sd_spi_file_reader
 // Type    : synthesizable, IP's top
-// Standard: SystemVerilog 2005 (IEEE1800-2005)
+// Standard: Verilog 2001 (IEEE1364-2001)
 // Function: A SDcard reader via SPI.
 //           Specify a filename, sd_spi_file_reader will read out file content
-// Compatibility: CardType   : SDv1.1 , SDv2  or SDHCv2
-//                FileSystem : FAT16 or FAT32
+//           Support CardType   : SDv1.1 , SDv2  or SDHCv2
+//           Support FileSystem : FAT16 or FAT32
 //--------------------------------------------------------------------------------------------------------
 
 module sd_spi_file_reader #(
-    parameter FILE_NAME = "example.txt",  // file to read, ignore Upper and Lower Case
-                                          // For example, if you want to read a file named HeLLo123.txt in the SD card, this parameter can be hello123.TXT, HELLO123.txt or HEllo123.Txt
-    parameter SPI_CLK_DIV = 50            // SD spi_sck freq = clk freq/(2*SPI_CLK_DIV), modify SPI_CLK_DIV to change the SPI speed
-                                          // for example, when clk=50MHz, SPI_CLK_DIV=50,then spi_sck=50MHz/(2*50)=500kHz, 500kHz is a typical SPI speed for SDcard
+    parameter            FILE_NAME_LEN = 11           ,  // valid length of FILE_NAME (in bytes)
+    parameter [52*8-1:0] FILE_NAME     = "example.txt",  // file to read, ignore Upper and Lower Case
+    parameter              SPI_CLK_DIV = 50              // SD spi_sck freq = clk freq/(2*SPI_CLK_DIV), modify SPI_CLK_DIV to change the SPI speed
+                                                         // for example, when clk=50MHz, SPI_CLK_DIV=50,then spi_sck=50MHz/(2*50)=500kHz, 500kHz is a typical SPI speed for SDcard
 )(
-    input  wire       rstn,   // rstn active-low, 1:working, 0:reset
-    input  wire       clk,    // clock 
+    input  wire       rstn,                              // rstn active-low, 1:working, 0:reset
+    input  wire       clk,                               // clock 
     // SDcard spi interface
     output wire       spi_ssn, spi_sck, spi_mosi,
     input  wire       spi_miso,
     // status output (optional for user)
-    output wire [1:0] card_type,         // SDv1, SDv2, SDHCv2 or UNKNOWN
-    output wire [3:0] card_stat,         // show the sdcard initialize status
-    output wire [1:0] filesystem_type,   // FAT16, FAT32 or UNKNOWN
-    output wire [2:0] filesystem_stat,   // show the filesystem initialize status
-    output reg        file_found,        // 0=file not found, 1=file found
+    output wire [1:0] card_type,                         // SDv1, SDv2, SDHCv2 or UNKNOWN
+    output wire [3:0] card_stat,                         // show the sdcard initialize status
+    output wire [1:0] filesystem_type,                   // FAT16, FAT32 or UNKNOWN
+    output wire [2:0] filesystem_stat,                   // show the filesystem initialize status
+    output reg        file_found,                        // 0=file not found, 1=file found
     // file content data output (sync with clk)
-    output reg        outen,             // when outen=1, a byte of file content is read out from outbyte
-    output reg  [7:0] outbyte            // a byte of file content
+    output reg        outen,                             // when outen=1, a byte of file content is read out from outbyte
+    output reg  [7:0] outbyte                            // a byte of file content
 );
 
-initial file_found = 1'b0;
-initial {outen,outbyte} = '0;
 
-function automatic logic [7:0] toUpperCase(input [7:0] in);
-    return (in>=8'h61 && in<=8'h7A) ? in&8'b11011111 : in;
+initial file_found = 1'b0;
+initial {outen,outbyte} = 0;
+
+
+function  [7:0] toUpperCase;
+    input [7:0] in;
+begin
+    toUpperCase = (in>=8'h61 && in<=8'h7A) ? (in & 8'b11011111) : in;
+end
 endfunction
 
-localparam TARGET_FNAME_LEN = ($bits(FILE_NAME)/8);
 
-wire [$bits(FILE_NAME)-1:0] TARGET_FNAME = FILE_NAME;
-reg  [$bits(FILE_NAME)-1:0] TARGET_FNAME_UPPER;
-always_comb
-    for(int ii=0; ii<TARGET_FNAME_LEN; ii++)
-        TARGET_FNAME_UPPER[ii*8+:8] = toUpperCase( TARGET_FNAME[ii*8+:8] );
+wire [52*8-1:0] FILE_NAME_UPPER;
+
+generate genvar k;
+    for (k=0; k<52; k=k+1) begin : convert_fname_to_upper
+        assign FILE_NAME_UPPER[k*8 +: 8] = toUpperCase( FILE_NAME[k*8 +: 8] );
+    end
+endgenerate
+
 
 
 reg         read_start     = 1'b0;
@@ -56,7 +63,7 @@ wire [ 8:0] raddr;
 wire [ 7:0] rdata;
 
 reg  [31:0] rootdir_sector = 0;       // rootdir sector number (FAT16 only)
-reg  [15:0] rootdir_sectorcount = '0; // (FAT16 only)
+reg  [15:0] rootdir_sectorcount = 0;  // (FAT16 only)
 
 reg  [31:0] curr_cluster = 0;    // current reading cluster number
 
@@ -75,25 +82,51 @@ reg  [ 7:0] cluster_sector_offset=8'h0;   // current sector number in cluster
 reg  [31:0] file_cluster = 0;
 reg  [31:0] file_size = 0;
 
-reg  [ 7:0] cluster_size = '0;
+reg  [ 7:0] cluster_size = 0;
 reg  [31:0] first_fat_sector_no = 0;
 reg  [31:0] first_data_sector_no= 0;
 
 reg         search_fat = 1'b0;
 
-enum logic [2:0] {RESET, SEARCH_MBR, SEARCH_DBR, LS_ROOT_FAT16, LS_ROOT_FAT32, READ_A_FILE, DONE} filesystem_state = RESET;
-enum logic [1:0] {UNASSIGNED, UNKNOWN, FAT16, FAT32} filesystem=UNASSIGNED, filesystem_parsed;
+localparam [2:0] RESET         = 3'd0,
+                 SEARCH_MBR    = 3'd1,
+                 SEARCH_DBR    = 3'd2,
+                 LS_ROOT_FAT16 = 3'd3,
+                 LS_ROOT_FAT32 = 3'd4,
+                 READ_A_FILE   = 3'd5,
+                 DONE          = 3'd6;
+
+reg        [2:0] filesystem_state = RESET;
+
+//enum logic [2:0] {RESET, SEARCH_MBR, SEARCH_DBR, LS_ROOT_FAT16, LS_ROOT_FAT32, READ_A_FILE, DONE} filesystem_state = RESET;
+
+localparam [1:0] UNASSIGNED = 2'd0,
+                 UNKNOWN    = 2'd1,
+                 FAT16      = 2'd2,
+                 FAT32      = 2'd3;
+
+reg        [1:0] filesystem = UNASSIGNED,
+                 filesystem_parsed;
+
+//enum logic [1:0] {UNASSIGNED, UNKNOWN, FAT16, FAT32} filesystem=UNASSIGNED, filesystem_parsed;
 
 assign filesystem_type = filesystem;
 assign filesystem_stat = filesystem_state;
 
 
 
+
+//----------------------------------------------------------------------------------------------------------------------
+// loop variables
+integer ii, i;
+
+
+
 //----------------------------------------------------------------------------------------------------------------------
 // store MBR or DBR fields
 //----------------------------------------------------------------------------------------------------------------------
-reg [ 7:0] sector_content [512];
-initial for(int ii=0; ii<512; ii++) sector_content[ii] = '0;
+reg [ 7:0] sector_content [0:511];
+initial for(ii=0; ii<512; ii=ii+1) sector_content[ii] = 0;
 
 always @ (posedge clk)
     if(rvalid)
@@ -113,10 +146,10 @@ wire [15:0] resv_sectors       =   {sector_content['hF],sector_content['hE]};
 wire [ 7:0] number_of_fat      =    sector_content['h10];
 wire [15:0] rootdir_itemcount  =   {sector_content['h12],sector_content['h11]};   // root dir item count (FAT16 Only)
 
-reg  [31:0] sectors_per_fat = '0;
-reg  [31:0] root_cluster    = '0;
+reg  [31:0] sectors_per_fat = 0;
+reg  [31:0] root_cluster    = 0;
 
-always_comb begin    
+always @ (*) begin    
     sectors_per_fat   = {16'h0, sector_content['h17], sector_content['h16]};
     root_cluster      = 0;
     if(sectors_per_fat>0) begin  // FAT16 case
@@ -196,7 +229,7 @@ always @ (posedge clk or negedge rstn)
                                     read_sector_no <= first_data_sector_no + cluster_size * curr_cluster + cluster_sector_offset;
                                     filesystem_state <= READ_A_FILE;
                                 end else if(cluster_sector_offset<rootdir_sectorcount) begin
-                                    cluster_sector_offset ++;
+                                    cluster_sector_offset = cluster_sector_offset + 8'd1;
                                     read_sector_no <= rootdir_sector + cluster_sector_offset;
                                 end else begin
                                     filesystem_state <= DONE;   // cant find target file
@@ -208,7 +241,7 @@ always @ (posedge clk or negedge rstn)
                                     read_sector_no <= first_data_sector_no + cluster_size * curr_cluster + cluster_sector_offset;
                                     filesystem_state <= READ_A_FILE;
                                 end else if(cluster_sector_offset<(cluster_size-1)) begin
-                                    cluster_sector_offset ++;
+                                    cluster_sector_offset = cluster_sector_offset + 8'd1;
                                     read_sector_no <= first_data_sector_no + cluster_size * curr_cluster + cluster_sector_offset;
                                 end else begin   // read FAT to get next cluster
                                     search_fat <= 1'b1;
@@ -227,7 +260,7 @@ always @ (posedge clk or negedge rstn)
                             end
             READ_A_FILE  :  if(~search_fat) begin
                                 if(cluster_sector_offset<(cluster_size-1)) begin
-                                    cluster_sector_offset ++;
+                                    cluster_sector_offset = cluster_sector_offset + 8'd1;
                                     read_sector_no <= first_data_sector_no + cluster_size * curr_cluster + cluster_sector_offset;
                                 end else begin   // read FAT to get next cluster
                                     search_fat <= 1'b1;
@@ -256,13 +289,13 @@ always @ (posedge clk or negedge rstn)
             endcase
         end else begin
             case(filesystem_state)
-            RESET         : filesystem_state  <= SEARCH_MBR;
-            SEARCH_MBR    : read_start <= 1'b1;
-            SEARCH_DBR    : read_start <= 1'b1;
-            LS_ROOT_FAT16 : read_start <= 1'b1;
-            LS_ROOT_FAT32 : read_start <= 1'b1;
-            READ_A_FILE   : read_start <= 1'b1;
-            DONE          : $finish;   // only for finish simulation, will be ignore when synthesize
+                RESET         : filesystem_state  <= SEARCH_MBR;
+                SEARCH_MBR    : read_start <= 1'b1;
+                SEARCH_DBR    : read_start <= 1'b1;
+                LS_ROOT_FAT16 : read_start <= 1'b1;
+                LS_ROOT_FAT32 : read_start <= 1'b1;
+                READ_A_FILE   : read_start <= 1'b1;
+                //DONE          : $finish;   // only for finish simulation, will be ignore when synthesize
             endcase
         end
     end
@@ -293,7 +326,7 @@ end
 
 sd_spi_sector_reader #(
     .SPI_CLK_DIV ( SPI_CLK_DIV    )
-) sd_spi_sector_reader_i (
+) u_sd_spi_sector_reader (
     .rstn        ( rstn           ),
     .clk         ( clk            ),
     .spi_ssn     ( spi_ssn        ),
@@ -316,11 +349,11 @@ sd_spi_sector_reader #(
 // parse root dir
 //----------------------------------------------------------------------------------------------------------------------
 reg         fready = 1'b0;            // a file is find when fready = 1
-reg  [ 7:0] fnamelen = '0;
-reg  [15:0] fcluster = '0;
+reg  [ 7:0] fnamelen = 0;
+reg  [15:0] fcluster = 0;
 reg  [31:0] fsize = 0;
-reg  [ 7:0] fname [52];
-reg  [ 7:0] file_name [52];
+reg  [ 7:0] fname     [0:51];
+reg  [ 7:0] file_name [0:51];
 reg         isshort=1'b0, islongok=1'b0, islong=1'b0, longvalid=1'b0;
 reg  [ 5:0] longno = 6'h0;
 reg  [ 7:0] lastchar = 8'h0;
@@ -330,13 +363,13 @@ reg  [ 7:0] file_namelen = 8'h0;
 reg  [15:0] file_1st_cluster = 16'h0;
 reg  [31:0] file_1st_size = 0;
 
-initial for(int i=0;i<52;i++) begin file_name[i]=8'h0; fname[i]=8'h0; end
+initial for(i=0;i<52;i=i+1) begin file_name[i]=8'h0; fname[i]=8'h0; end
 
 always @ (posedge clk or negedge rstn) begin
     if(~rstn) begin
         fready<=1'b0;  fnamelen<=8'h0; file_namelen<=8'h0;
         fcluster<=16'h0;  fsize<=0;
-        for(int i=0;i<52;i++) begin file_name[i]<=8'h0; fname[i]<=8'h0; end
+        for(i=0;i<52;i=i+1) begin file_name[i]<=8'h0; fname[i]<=8'h0; end
         
         {isshort, islongok, islong, longvalid} = 4'b0000;
         longno     = 6'h0;
@@ -345,7 +378,7 @@ always @ (posedge clk or negedge rstn) begin
         file_1st_cluster=16'h0; file_1st_size=0;
     end else begin
         fready<=1'b0;  fnamelen<=8'h0;
-        for(int i=0;i<52;i++) fname[i]<=8'h0;
+        for(i=0;i<52;i=i+1) fname[i]<=8'h0;
         fcluster<=16'h0;  fsize<=0;
         
         if( rvalid && (filesystem_state==LS_ROOT_FAT16||filesystem_state==LS_ROOT_FAT32) && ~search_fat ) begin
@@ -393,7 +426,7 @@ always @ (posedge clk or negedge rstn) begin
                 if(islongok && longvalid || isshort) begin
                     fready <= 1'b1;
                     fnamelen <= file_namelen;
-                    for(int i=0;i<52;i++) fname[i] <= (i<file_namelen) ? file_name[i] : 8'h0;
+                    for(i=0;i<52;i=i+1) fname[i] <= (i<file_namelen) ? file_name[i] : 8'h0;
                     fcluster <= file_1st_cluster;
                     fsize <= file_1st_size;
                 end
@@ -403,7 +436,7 @@ always @ (posedge clk or negedge rstn) begin
                 if(raddr[4:0]>5'h0&&raddr[4:0]<5'hB || raddr[4:0]>=5'hE&&raddr[4:0]<5'h1A || raddr[4:0]>=5'h1C)begin
                     if(raddr[4:0]<5'hB ? raddr[0] : ~raddr[0]) begin
                         lastchar <= rdata;
-                        fdtnamelen++;
+                        fdtnamelen = fdtnamelen + 8'd1;
                     end else begin
                         //automatic logic [15:0] unicode = {rdata,lastchar};
                         if({rdata,lastchar} == 16'h0000) begin
@@ -423,16 +456,16 @@ always @ (posedge clk or negedge rstn) begin
                 if(raddr[4:0]<5'h8) begin
                     if(rdata!=8'h20) begin
                         file_name[sdtnamelen] <= rdata;
-                        sdtnamelen++;
+                        sdtnamelen = sdtnamelen + 8'd1;
                     end
                 end else if(raddr[4:0]<5'hB) begin
                     if(raddr[4:0]==5'h8) begin
                         file_name[sdtnamelen] <= 8'h2E;
-                        sdtnamelen++;
+                        sdtnamelen = sdtnamelen + 8'd1;
                     end
                     if(rdata!=8'h20) begin
                         file_name[sdtnamelen] <= rdata;
-                        sdtnamelen++;
+                        sdtnamelen = sdtnamelen + 8'd1;
                     end
                 end else if(raddr[4:0]==5'hB) begin
                     file_namelen <= sdtnamelen;
@@ -454,12 +487,12 @@ always @ (posedge clk or negedge rstn)
         file_cluster <= 0;
         file_size <= 0;
     end else begin
-        if(fready && fnamelen==TARGET_FNAME_LEN) begin
+        if(fready && fnamelen==FILE_NAME_LEN) begin
             file_found <= 1'b1;
             file_cluster <= fcluster;
             file_size <= fsize;
-            for(int ii=0; ii<TARGET_FNAME_LEN; ii++) begin
-                if( fname[TARGET_FNAME_LEN-1-ii] != TARGET_FNAME_UPPER[ii*8+:8] ) begin
+            for(ii=0; ii<FILE_NAME_LEN; ii=ii+1) begin
+                if( fname[FILE_NAME_LEN-1-ii] != FILE_NAME_UPPER[ii*8+:8] ) begin
                     file_found <= 1'b0;
                     file_cluster <= 0;
                     file_size <= 0;
@@ -478,13 +511,13 @@ reg [31:0] fptr = 0;
 always @ (posedge clk or negedge rstn)
     if(~rstn) begin
         fptr <= 0;
-        {outen,outbyte} <= '0;
+        {outen,outbyte} <= 0;
     end else begin
         if(rvalid && filesystem_state==READ_A_FILE && ~search_fat && fptr<file_size) begin
             fptr <= fptr + 1;
             {outen,outbyte} <= {1'b1,rdata};
         end else
-            {outen,outbyte} <= '0;
+            {outen,outbyte} <= 0;
     end
 
 

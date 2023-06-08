@@ -2,49 +2,51 @@
 //--------------------------------------------------------------------------------------------------------
 // Module  : spi_session
 // Type    : synthesizable, IP's sub module
-// Standard: SystemVerilog 2005 (IEEE1800-2005)
+// Standard: Verilog 2001 (IEEE1364-2001)
 //--------------------------------------------------------------------------------------------------------
 
 module spi_session (
-    input  logic        rstn,
-    input  logic        clk,
+    input  wire         rstn,
+    input  wire         clk,
     // spi interface
-    output logic        spi_ssn, spi_sck, spi_mosi,
-    input  logic        spi_miso,
+    output reg          spi_ssn, spi_sck, spi_mosi,
+    input  wire         spi_miso,
     // user command interface
-    input  logic        start, 
-    output logic        done,
-    input  logic [31:0] clkdiv, // next command spi_sck = clk / (2*(clkdiv+1)), for example clk=50MHz, clkdiv=124, spi_sck=50MHz/(2*125) = 200kHz
-    input  logic [47:0] cmd, acmd,
-    input  logic [ 7:0] waitcycle, precycle, startcycle, cmdcycle, cmdrcycle, acmdcycle, acmdrcycle, midcycle, stopcycle, recycle, // dummy clock byte cycles
-    output logic [ 7:0] cmdrsp, acmdrsp, rwrsp,
-    output logic [47:0] cmdres, acmdres,
+    input  wire         start, 
+    output wire         done,
+    input  wire  [31:0] clkdiv, // next command spi_sck = clk / (2*(clkdiv+1)), for example clk=50MHz, clkdiv=124, spi_sck=50MHz/(2*125) = 200kHz
+    input  wire  [47:0] cmd, acmd,
+    input  wire  [ 7:0] waitcycle, precycle, startcycle, cmdcycle, cmdrcycle, acmdcycle, acmdrcycle, midcycle, stopcycle, recycle, // dummy clock byte cycles
+    output reg   [ 7:0] cmdrsp, acmdrsp, rwrsp,
+    output reg   [47:0] cmdres, acmdres,
     // data readout
-    output logic        rvalid,
-    output logic [15:0] rindex,
-    output logic [ 7:0] rdata
+    output reg          rvalid,
+    output reg   [15:0] rindex,
+    output reg   [ 7:0] rdata
 );
+
 
 initial {cmdrsp, acmdrsp, rwrsp} = 0;
 initial {cmdres, acmdres} = 0;
 initial {spi_ssn, spi_sck, spi_mosi} = 3'b111;
+initial {rvalid, rdata, rindex} = 0;
 
-logic start_last=1'b0;
-logic [31:0] clkdivreg=0, cyccnt=0;
-logic [ 2:0] bitcnt=3'b0;
-logic highlow=1'b0;
-logic byteend, bytestart;
-logic scken=1'b0, chipselect=1'b0;
-logic [ 7:0] wbyte=8'hff, rbyte=8'h0;
-logic [47:0] cmdr='0, acmdr='0;
-logic [ 7:0] waitc=8'h0, prec=8'h0, startc=8'h0, cmdc=8'h0, cmdrwait=8'h0, cmdrc=8'h0, acmdc=8'h0, acmdrwait=8'h0, acmdrc=8'h0, midc=8'h0, stopc=8'h0, rec=8'h0, lastc=8'h0;
-logic [15:0] rwc = 16'h0;
-logic iscmdr=1'b0, isacmdr=1'b0, iscmdres=1'b0, isacmdres=1'b0,ismidc=1'b0, isrwc=1'b0;
+reg   start_last=1'b0;
+reg   [31:0] clkdivreg=0, cyccnt=0;
+reg   [ 2:0] bitcnt=3'b0;
+reg   highlow=1'b0;
+wire  byteend, bytestart;
+reg   scken=1'b0, chipselect=1'b0;
+reg   [ 7:0] wbyte=8'hff, rbyte=8'h0;
+reg   [47:0] cmdr=48'h0, acmdr=48'h0;
+reg   [ 7:0] waitc=8'h0, prec=8'h0, startc=8'h0, cmdc=8'h0, cmdrwait=8'h0, cmdrc=8'h0, acmdc=8'h0, acmdrwait=8'h0, acmdrc=8'h0, midc=8'h0, stopc=8'h0, rec=8'h0, lastc=8'h0;
+reg   [15:0] rwc = 16'h0;
+reg   iscmdr=1'b0, isacmdr=1'b0, iscmdres=1'b0, isacmdres=1'b0,ismidc=1'b0, isrwc=1'b0;
 
 assign byteend   = (cyccnt==0) && ({bitcnt,highlow}==4'h0) ;
 assign bytestart = (cyccnt==1) && ({bitcnt,highlow}==4'h0) ;
 
-assign done = start && start_last && (lastc==0);
+assign done = start && start_last && (lastc==8'h0);
 
 always @ (posedge clk or negedge rstn)
     if(~rstn) begin
@@ -76,32 +78,32 @@ always @ (posedge clk or negedge rstn)
     if(~rstn) begin
         start_last   <= 1'b0;
         clkdivreg    <= 0;
-        {cmdr,acmdr} <= '0;
-        {cmdrsp, acmdrsp, rwrsp} <= '0;
-        {cmdres, acmdres} <= '0;
-        {waitc,prec,startc,cmdc,cmdrwait,cmdrc,acmdc,acmdrwait,acmdrc,midc,rwc,stopc,rec,lastc} <= '0;
-        {iscmdr, isacmdr,iscmdres,isacmdres,ismidc,isrwc} <= '0;
+        {cmdr,acmdr} <= 0;
+        {cmdrsp, acmdrsp, rwrsp} <= 0;
+        {cmdres, acmdres} <= 0;
+        {waitc,prec,startc,cmdc,cmdrwait,cmdrc,acmdc,acmdrwait,acmdrc,midc,rwc,stopc,rec,lastc} <= 0;
+        {iscmdr, isacmdr,iscmdres,isacmdres,ismidc,isrwc} <= 0;
         {chipselect,scken,wbyte} <= {2'b00, 8'hff};
-        {rvalid, rdata, rindex} = 0;
+        {rvalid, rdata, rindex} <= 0;
     end else begin
-        {rvalid, rdata, rindex} = 0;
+        {rvalid, rdata, rindex} <= 0;
         if(~start) begin
             start_last   <= 1'b0;
             clkdivreg    <= 0;
-            {cmdr,acmdr} <= '0;
-            {cmdrsp, acmdrsp, rwrsp} <= '0;
-            {cmdres, acmdres} <= '0;
-            {waitc,prec,startc,cmdc,cmdrwait,cmdrc,acmdc,acmdrwait,acmdrc,midc,rwc,stopc,rec,lastc} <= '0;
-            {iscmdr, isacmdr,iscmdres,isacmdres,ismidc,isrwc} <= '0;
+            {cmdr,acmdr} <= 0;
+            {cmdrsp, acmdrsp, rwrsp} <= 0;
+            {cmdres, acmdres} <= 0;
+            {waitc,prec,startc,cmdc,cmdrwait,cmdrc,acmdc,acmdrwait,acmdrc,midc,rwc,stopc,rec,lastc} <= 0;
+            {iscmdr, isacmdr,iscmdres,isacmdres,ismidc,isrwc} <= 0;
             {chipselect,scken,wbyte} <= {2'b00, 8'hff};
         end else if(~start_last) begin
             start_last   <= 1'b1;
             clkdivreg    <= clkdiv<2 ? 2 : clkdiv;
             {cmdr,acmdr} <= {cmd, acmd};
-            {cmdrsp, acmdrsp, rwrsp} <= '0;
-            {cmdres, acmdres} <= '0;
+            {cmdrsp, acmdrsp, rwrsp} <= 0;
+            {cmdres, acmdres} <= 0;
             {waitc,prec,startc,cmdc,cmdrwait,cmdrc,acmdc,acmdrwait,acmdrc,midc,rwc,stopc,rec,lastc} <= {waitcycle,precycle,startcycle,cmdcycle,(cmdcycle>0)?8'h20:8'h0,cmdrcycle,acmdcycle,(acmdcycle>0)?8'h20:8'h0,acmdrcycle,midcycle,(midcycle>0)?16'd514:16'd0,stopcycle,recycle,8'h2};
-            {iscmdr, isacmdr,iscmdres,isacmdres,ismidc,isrwc} <= '0;
+            {iscmdr, isacmdr,iscmdres,isacmdres,ismidc,isrwc} <= 0;
             {chipselect,scken,wbyte} <= {2'b00, 8'hff};
         end else if(bytestart) begin
             if         (waitc>0) begin
@@ -165,10 +167,10 @@ always @ (posedge clk or negedge rstn)
                 midc  <= 8'd0;
             end
             if(isrwc) begin
-                {rvalid, rdata} = {1'b1, rbyte};
-                rindex = rwc;
+                {rvalid, rdata} <= {1'b1, rbyte};
+                rindex <= rwc;
             end
-            {iscmdr, isacmdr,iscmdres,isacmdres,ismidc,isrwc} <= '0;
+            {iscmdr, isacmdr,iscmdres,isacmdres,ismidc,isrwc} <= 0;
         end
     end
 
