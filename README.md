@@ -81,7 +81,7 @@ where:
 Run FPGA demo
 ===========================
 
-The [example-vivado-readfile](./example-vivado-readfile) folder contains a demo vivado project, the demo runs on [Nexys4 development board](http://www.digilent.com.cn/products/product-nexys-4-ddr-artix-7-fpga- trainer-board.html) (because the Nexys4 development board has a microSDcard slot), it will find the file example.txt from the root directory of the SDcard and read out its entire content, and then send it to the PC via **UART** .
+The [example-vivado-readfile](./example-vivado-readfile) folder contains a demo vivado project, the demo runs on [Nexys4 development board](http://www.digilent.com.cn/products/product-nexys-4-ddr-artix-7-fpga-trainer-board.html) (because the Nexys4 development board has a microSDcard slot), it will search the file "example.txt" from the root directory of the SDcard and read out its entire content, and then send it to the PC via **UART** .
 
 Run the demo as follows:
 
