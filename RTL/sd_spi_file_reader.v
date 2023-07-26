@@ -10,25 +10,26 @@
 //--------------------------------------------------------------------------------------------------------
 
 module sd_spi_file_reader #(
-    parameter            FILE_NAME_LEN = 11           ,  // valid length of FILE_NAME (in bytes)
-    parameter [52*8-1:0] FILE_NAME     = "example.txt",  // file to read, ignore Upper and Lower Case
-    parameter              SPI_CLK_DIV = 50              // SD spi_sck freq = clk freq/(2*SPI_CLK_DIV), modify SPI_CLK_DIV to change the SPI speed
-                                                         // for example, when clk=50MHz, SPI_CLK_DIV=50,then spi_sck=50MHz/(2*50)=500kHz, 500kHz is a typical SPI speed for SDcard
+    parameter            FILE_NAME_LEN = 11           , // length of FILE_NAME (in bytes). Since the length of "example.txt" is 11, so here is 11.
+    parameter [52*8-1:0] FILE_NAME     = "example.txt", // file name to read, ignore upper and lower case
+                                                        // For example, if you want to read a file named "HeLLo123.txt", this parameter can be "hello123.TXT", "HELLO123.txt" or "HEllo123.Txt"
+    parameter            SPI_CLK_DIV   = 50             // SD spi_sck freq = clk freq/(2*SPI_CLK_DIV), modify SPI_CLK_DIV to change the SPI speed
+                                                        // For example, when clk=50MHz, SPI_CLK_DIV=50,then spi_sck=50MHz/(2*50)=500kHz, 500kHz is a typical SPI speed for SDcard
 )(
-    input  wire       rstn,                              // rstn active-low, 1:working, 0:reset
-    input  wire       clk,                               // clock 
+    input  wire       rstn,                             // rstn active-low, 1:working, 0:reset
+    input  wire       clk,                              // clock 
     // SDcard spi interface
     output wire       spi_ssn, spi_sck, spi_mosi,
     input  wire       spi_miso,
     // status output (optional for user)
-    output wire [1:0] card_type,                         // SDv1, SDv2, SDHCv2 or UNKNOWN
-    output wire [3:0] card_stat,                         // show the sdcard initialize status
-    output wire [1:0] filesystem_type,                   // FAT16, FAT32 or UNKNOWN
-    output wire [2:0] filesystem_stat,                   // show the filesystem initialize status
-    output reg        file_found,                        // 0=file not found, 1=file found
+    output wire [1:0] card_type,                        // SDv1, SDv2, SDHCv2 or UNKNOWN
+    output wire [3:0] card_stat,                        // show the sdcard initialize status
+    output wire [1:0] filesystem_type,                  // FAT16, FAT32 or UNKNOWN
+    output wire [2:0] filesystem_stat,                  // show the filesystem initialize status
+    output reg        file_found,                       // 0=file not found, 1=file found
     // file content data output (sync with clk)
-    output reg        outen,                             // when outen=1, a byte of file content is read out from outbyte
-    output reg  [7:0] outbyte                            // a byte of file content
+    output reg        outen,                            // when outen=1, a byte of file content is read out from outbyte
+    output reg  [7:0] outbyte                           // a byte of file content
 );
 
 
